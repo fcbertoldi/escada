@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"regexp"
+	"testing"
 )
 
 const (
@@ -14,13 +16,20 @@ const (
 	googlebotUserAgent = "Mozilla/5.0 (Linux; Android 6.0.1; Nexus 5X Build/MMB29P) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.6533.119 Mobile Safari/537.36 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)"
 )
 
-func extractUrl(u *url.URL) (reqUrl *url.URL, err error) {
+func extractUrl(u *url.URL, urlScheme string) (reqUrl *url.URL, err error) {
 	reqUrlString, err := url.QueryUnescape(u.RequestURI())
 	if err != nil {
 		return nil, err
 	}
-	if len(reqUrlString) > 0 && reqUrlString[0] == '/' {
+
+	if len(reqUrlString) == 0 {
+		return nil, fmt.Errorf("empty URL")
+	}
+	if reqUrlString[0] == '/' {
 		reqUrlString = reqUrlString[1:]
+	}
+	if matched, _ := regexp.MatchString(`^https?://`, reqUrlString); !matched {
+		reqUrlString = urlScheme + reqUrlString
 	}
 	reqUrl, err = url.Parse(reqUrlString)
 	if err != nil {
@@ -39,8 +48,19 @@ func copyHeader(dst, src http.Header) {
 	}
 }
 
-func ProxySite(w http.ResponseWriter, r *http.Request) {
-	reqUrl, err := extractUrl(r.URL)
+type Handler struct {
+	urlScheme string
+}
+
+func NewHandler() *Handler {
+	if testing.Testing() {
+		return &Handler{urlScheme: "http://"}
+	}
+	return &Handler{urlScheme: "https://"}
+}
+
+func (h *Handler) ProxySite(w http.ResponseWriter, r *http.Request) {
+	reqUrl, err := extractUrl(r.URL, h.urlScheme)
 	if err != nil {
 		slog.Error("ProxySite", slog.String("error", err.Error()))
 		w.WriteHeader(http.StatusBadRequest)
@@ -86,7 +106,7 @@ func ProxySite(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	http.HandleFunc("GET /...", ProxySite)
+	http.HandleFunc("GET /...", NewHandler().ProxySite)
 
 	addr := fmt.Sprintf("127.0.0.1:%s", proxyPort)
 	err := http.ListenAndServe(addr, nil)
