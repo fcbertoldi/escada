@@ -19,6 +19,9 @@ func extractUrl(u *url.URL) (reqUrl *url.URL, err error) {
 	if err != nil {
 		return nil, err
 	}
+	if len(reqUrlString) > 0 && reqUrlString[0] == '/' {
+		reqUrlString = reqUrlString[1:]
+	}
 	reqUrl, err = url.Parse(reqUrlString)
 	if err != nil {
 		return nil, err
@@ -59,8 +62,15 @@ func ProxySite(w http.ResponseWriter, r *http.Request) {
 	resp, err := client.Do(req)
 	if err != nil {
 		slog.Error("ProxySite", slog.String("error", err.Error()))
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, "<h1>Internal Server Error</h1>")
+		if resp != nil {
+			w.WriteHeader(resp.StatusCode)
+			_, err = io.Copy(w, resp.Body)
+			if err != nil {
+				slog.Error("ProxySite", slog.String("error", err.Error()))
+				w.WriteHeader(http.StatusInternalServerError)
+				fmt.Fprintf(w, "<h1>Internal Server Error</h1>")
+			}
+		}
 		return
 	}
 	defer resp.Body.Close()
