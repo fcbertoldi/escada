@@ -3,8 +3,10 @@ package main
 import (
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/url"
+	"os"
 )
 
 const (
@@ -15,7 +17,6 @@ const (
 func extractUrl(u *url.URL) (reqUrl *url.URL, err error) {
 	reqUrlString, err := url.QueryUnescape(u.RequestURI())
 	if err != nil {
-		fmt.Println("Error: ", err)
 		return nil, err
 	}
 	reqUrl, err = url.Parse(reqUrlString)
@@ -27,6 +28,7 @@ func extractUrl(u *url.URL) (reqUrl *url.URL, err error) {
 }
 
 func copyHeader(dst, src http.Header) {
+	clear(dst)
 	for k, vv := range src {
 		for _, v := range vv {
 			dst.Add(k, v)
@@ -36,24 +38,30 @@ func copyHeader(dst, src http.Header) {
 
 func ProxySite(w http.ResponseWriter, r *http.Request) {
 	reqUrl, err := extractUrl(r.URL)
-
 	if err != nil {
-		fmt.Println("Error: ", err)
+		slog.Error("ProxySite", slog.String("error", err.Error()))
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprintf(w, "<h1>Invalid Origin URL</h1>")
 		return
 	}
 
-	fmt.Println("Proxying request to: ", reqUrl)
+	slog.Info("Proxied Request", slog.String("url", reqUrl.String()))
 
 	client := &http.Client{}
 	req, err := http.NewRequest("GET", reqUrl.String(), nil)
 	if err != nil {
-		fmt.Println("Error: ", err)
+		slog.Error("ProxySite", slog.String("error", err.Error()))
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(w, "<h1>Internal Server Error</h1>")
 		return
 	}
 	req.Header.Set("User-Agent", googlebotUserAgent)
 	resp, err := client.Do(req)
 	if err != nil {
-		panic(err)
+		slog.Error("ProxySite", slog.String("error", err.Error()))
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(w, "<h1>Internal Server Error</h1>")
+		return
 	}
 	defer resp.Body.Close()
 
@@ -61,16 +69,19 @@ func ProxySite(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(resp.StatusCode)
 	_, err = io.Copy(w, resp.Body)
 	if err != nil {
-		fmt.Println("Error: ", err)
+		slog.Error("ProxySite", slog.String("error", err.Error()))
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(w, "<h1>Internal Server Error</h1>")
 	}
 }
 
 func main() {
 	http.HandleFunc("GET /...", ProxySite)
 
-	addr := fmt.Sprintf(":%s", proxyPort)
+	addr := fmt.Sprintf("127.0.0.1:%s", proxyPort)
 	err := http.ListenAndServe(addr, nil)
 	if err != nil {
-		fmt.Println("Error: ", err)
+		slog.Error("ListenAndServe:", slog.String("error", err.Error()))
+		os.Exit(1)
 	}
 }
