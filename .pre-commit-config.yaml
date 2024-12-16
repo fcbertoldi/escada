@@ -3,9 +3,3 @@ repos:
     rev: v1.62.2
     hooks:
       - id: golangci-lint
-
-  - repo: https://github.com/dnephin/pre-commit-golang
-    rev: v0.5.1
-    hooks:
-      - id: go-fmt
-      - id: go-vet
