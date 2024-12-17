@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>URL Form</title>
+</head>
+<body>
+    <form id="proxyForm" method="get">
+        <label for="url">URL:</label>
+        <input type="url" id="url" name="url" placeholder="https://example.com" required>
+        <button type="submit">Go</button>
+    </form>
+
+    <script>
+        document.getElementById('proxyForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+            let url = document.getElementById('url').value;
+            if (url.indexOf('http') === -1) {
+                url = 'https://' + url;
+            }
+            window.location.href = '/sites/' + encodeURIComponent(url);
+            return false;
+        });
+    </script>
+</body>
+</html>

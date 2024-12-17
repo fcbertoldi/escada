@@ -1,6 +1,7 @@
 package main
 
 import (
+	_ "embed"
 	"fmt"
 	"io"
 	"log/slog"
@@ -16,8 +17,9 @@ const (
 	googlebotUserAgent = "Mozilla/5.0 (Linux; Android 6.0.1; Nexus 5X Build/MMB29P) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.6533.119 Mobile Safari/537.36 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)"
 )
 
-func extractUrl(u *url.URL, urlScheme string) (reqUrl *url.URL, err error) {
-	reqUrlString, err := url.QueryUnescape(u.RequestURI())
+func extractUrl(u string, urlScheme string) (reqUrl *url.URL, err error) {
+	fmt.Printf("u: %s\n", u)
+	reqUrlString, err := url.QueryUnescape(u)
 	if err != nil {
 		return nil, err
 	}
@@ -48,6 +50,18 @@ func copyHeader(dst, src http.Header) {
 	}
 }
 
+//go:embed public/index.html
+var indexHTML []byte
+
+func ProxyForm(w http.ResponseWriter, r *http.Request) {
+	slog.Info("ProxyForm", slog.String("url", r.URL.String()))
+	w.Header().Set("Content-Type", "text/html")
+	w.WriteHeader(http.StatusOK)
+	if _, err := w.Write(indexHTML); err != nil {
+		slog.Error("ProxyForm", slog.String("error", err.Error()))
+	}
+}
+
 type Handler struct {
 	urlScheme string
 }
@@ -59,10 +73,10 @@ func NewHandler() *Handler {
 	return &Handler{urlScheme: "https://"}
 }
 
-func (h *Handler) ProxySite(w http.ResponseWriter, r *http.Request) {
-	reqUrl, err := extractUrl(r.URL, h.urlScheme)
+func (h *Handler) ProxyPage(w http.ResponseWriter, r *http.Request) {
+	reqUrl, err := extractUrl(r.PathValue("page"), h.urlScheme)
 	if err != nil {
-		slog.Error("ProxySite", slog.String("error", err.Error()))
+		slog.Error("ProxyPage", slog.String("error", err.Error()))
 		w.WriteHeader(http.StatusBadRequest)
 		fmt.Fprintf(w, "<h1>Invalid Origin URL</h1>")
 		return
@@ -73,7 +87,7 @@ func (h *Handler) ProxySite(w http.ResponseWriter, r *http.Request) {
 	client := &http.Client{}
 	req, err := http.NewRequest("GET", reqUrl.String(), nil)
 	if err != nil {
-		slog.Error("ProxySite", slog.String("error", err.Error()))
+		slog.Error("ProxyPage", slog.String("error", err.Error()))
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(w, "<h1>Internal Server Error</h1>")
 		return
@@ -81,12 +95,12 @@ func (h *Handler) ProxySite(w http.ResponseWriter, r *http.Request) {
 	req.Header.Set("User-Agent", googlebotUserAgent)
 	resp, err := client.Do(req)
 	if err != nil {
-		slog.Error("ProxySite", slog.String("error", err.Error()))
+		slog.Error("ProxyPage", slog.String("error", err.Error()))
 		if resp != nil {
 			w.WriteHeader(resp.StatusCode)
 			_, err = io.Copy(w, resp.Body)
 			if err != nil {
-				slog.Error("ProxySite", slog.String("error", err.Error()))
+				slog.Error("ProxyPage", slog.String("error", err.Error()))
 				w.WriteHeader(http.StatusInternalServerError)
 				fmt.Fprintf(w, "<h1>Internal Server Error</h1>")
 			}
@@ -99,14 +113,15 @@ func (h *Handler) ProxySite(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(resp.StatusCode)
 	_, err = io.Copy(w, resp.Body)
 	if err != nil {
-		slog.Error("ProxySite", slog.String("error", err.Error()))
+		slog.Error("ProxyPage", slog.String("error", err.Error()))
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(w, "<h1>Internal Server Error</h1>")
 	}
 }
 
 func main() {
-	http.HandleFunc("GET /...", NewHandler().ProxySite)
+	http.HandleFunc("/pages/{page...}", NewHandler().ProxyPage)
+	http.HandleFunc("/", ProxyForm)
 
 	addr := fmt.Sprintf("127.0.0.1:%s", proxyPort)
 	err := http.ListenAndServe(addr, nil)

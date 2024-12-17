@@ -1,3 +1,9 @@
 {
-    "editor.formatOnSave": true
+    "editor.formatOnSave": true,
+    "languageToolLinter.disabledLanguageIds": [
+        "html"
+    ],
+    "languageToolLinter.diagnosticSeverity": "warning",
+    "languageToolLinter.plainText.enabled": false,
+    "languageToolLinter.external.url": ""
 }

@@ -29,18 +29,17 @@ func proxiedBackendServer(userAgentSpy *string) *httptest.Server {
 
 }
 
-func TestProxySiteHandler_OK(t *testing.T) {
+func TestProxyPageHandler_OK(t *testing.T) {
 	t.Parallel()
 	userAgentSpy := ""
 	backend := proxiedBackendServer(&userAgentSpy)
 	defer backend.Close()
 
-	testPath := "/" + url.QueryEscape(backend.URL+"/test")
-	log.Printf("Test path: %s", testPath)
-	req := httptest.NewRequest(http.MethodGet, testPath, nil)
+	req := httptest.NewRequest(http.MethodGet, "/pages/", nil)
+	req.SetPathValue("page", url.QueryEscape(backend.URL+"/test"))
 	recorder := httptest.NewRecorder()
 
-	NewHandler().ProxySite(recorder, req)
+	NewHandler().ProxyPage(recorder, req)
 
 	resp := recorder.Result()
 	defer resp.Body.Close()
@@ -63,19 +62,17 @@ func TestProxySiteHandler_OK(t *testing.T) {
 	}
 }
 
-func TestProxySiteHandler_NoHttpScheme(t *testing.T) {
+func TestProxyPageHandler_NoHttpScheme(t *testing.T) {
 	t.Parallel()
 	userAgentSpy := ""
 	backend := proxiedBackendServer(&userAgentSpy)
 	defer backend.Close()
 
-	testPath := "/" + url.QueryEscape(backend.URL[len("http://"):]+"/test")
-
-	log.Printf("Test path: %s", testPath)
-	req := httptest.NewRequest(http.MethodGet, testPath, nil)
+	req := httptest.NewRequest(http.MethodGet, "/pages/", nil)
+	req.SetPathValue("page", url.QueryEscape(backend.URL[len("http://"):]+"/test"))
 	recorder := httptest.NewRecorder()
 
-	NewHandler().ProxySite(recorder, req)
+	NewHandler().ProxyPage(recorder, req)
 
 	resp := recorder.Result()
 	defer resp.Body.Close()
@@ -90,13 +87,13 @@ func TestProxySiteHandler_NoHttpScheme(t *testing.T) {
 	}
 }
 
-func TestProxySiteHandler_InvalidEncoding(t *testing.T) {
+func TestProxyPageHandler_InvalidEncoding(t *testing.T) {
 	t.Parallel()
-	testPath := "/" + url.QueryEscape("%%%%%%")
-	req := httptest.NewRequest(http.MethodGet, testPath, nil)
+	req := httptest.NewRequest(http.MethodGet, "/pages/", nil)
+	req.SetPathValue("page", url.QueryEscape("%%%%%%"))
 	recorder := httptest.NewRecorder()
 
-	NewHandler().ProxySite(recorder, req)
+	NewHandler().ProxyPage(recorder, req)
 
 	resp := recorder.Result()
 	defer resp.Body.Close()
@@ -106,18 +103,17 @@ func TestProxySiteHandler_InvalidEncoding(t *testing.T) {
 	}
 }
 
-func TestProxySiteHandler_ProxiedError(t *testing.T) {
+func TestProxyPageHandler_ProxiedError(t *testing.T) {
 	t.Parallel()
 	userAgentSpy := ""
 	backend := proxiedBackendServer(&userAgentSpy)
 	defer backend.Close()
 
-	testPath := "/" + url.QueryEscape(backend.URL+"/410")
-	log.Printf("Test path: %s", testPath)
-	req := httptest.NewRequest(http.MethodGet, testPath, nil)
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req.SetPathValue("page", url.QueryEscape(backend.URL+"/410"))
 	recorder := httptest.NewRecorder()
 
-	NewHandler().ProxySite(recorder, req)
+	NewHandler().ProxyPage(recorder, req)
 
 	resp := recorder.Result()
 	defer resp.Body.Close()
