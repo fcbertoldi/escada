@@ -2,6 +2,7 @@ package main
 
 import (
 	_ "embed"
+	"flag"
 	"fmt"
 	"io"
 	"log/slog"
@@ -13,12 +14,12 @@ import (
 )
 
 const (
-	proxyPort          = "9982"
+	defaultAddr        = "127.0.0.1"
+	defaultPort        = 9982
 	googlebotUserAgent = "Mozilla/5.0 (Linux; Android 6.0.1; Nexus 5X Build/MMB29P) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.6533.119 Mobile Safari/537.36 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)"
 )
 
 func extractUrl(u string, urlScheme string) (reqUrl *url.URL, err error) {
-	fmt.Printf("u: %s\n", u)
 	reqUrlString, err := url.QueryUnescape(u)
 	if err != nil {
 		return nil, err
@@ -54,7 +55,7 @@ func copyHeader(dst, src http.Header) {
 var indexHTML []byte
 
 func ProxyForm(w http.ResponseWriter, r *http.Request) {
-	slog.Info("ProxyForm", slog.String("url", r.URL.String()))
+	slog.Debug("ProxyForm", slog.String("url", r.URL.String()))
 	w.Header().Set("Content-Type", "text/html")
 	w.WriteHeader(http.StatusOK)
 	if _, err := w.Write(indexHTML); err != nil {
@@ -82,7 +83,7 @@ func (h *Handler) ProxyPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	slog.Info("Proxied Request", slog.String("url", reqUrl.String()))
+	slog.Debug("Proxied Request", slog.String("url", reqUrl.String()))
 
 	client := &http.Client{}
 	req, err := http.NewRequest("GET", reqUrl.String(), nil)
@@ -120,10 +121,19 @@ func (h *Handler) ProxyPage(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+	addrFlag := flag.String("addr", defaultAddr, "address to listen on")
+	portFlag := flag.Int("port", defaultPort, "port to listen on")
+	flag.Parse()
+
+	if *portFlag <= 0 {
+		slog.Error("Invalid port number", slog.Int("port", *portFlag))
+		os.Exit(1)
+	}
+
 	http.HandleFunc("/pages/{page...}", NewHandler().ProxyPage)
 	http.HandleFunc("/", ProxyForm)
 
-	addr := fmt.Sprintf("127.0.0.1:%s", proxyPort)
+	addr := fmt.Sprintf("%s:%d", *addrFlag, *portFlag)
 	err := http.ListenAndServe(addr, nil)
 	if err != nil {
 		slog.Error("ListenAndServe:", slog.String("error", err.Error()))
