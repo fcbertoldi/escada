@@ -1,0 +1,24 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"type": "go",
+			"label": "go: build project",
+			"command": "build",
+			"args": [
+				"${workspaceFolder}"
+			],
+			"options": {
+				"cwd": "${workspaceFolder}/bin"
+			},
+			"problemMatcher": [
+				"$go"
+			],
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
+			"detail": "cd /home/fernando/Dev/escada/bin; go build ${workspaceFolder}"
+		}
+	]
+}
