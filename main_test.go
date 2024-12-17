@@ -9,8 +9,9 @@ import (
 	"testing"
 )
 
-func proxiedBackendServer() *httptest.Server {
+func proxiedBackendServer(userAgentSpy *string) *httptest.Server {
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		*userAgentSpy = r.Header.Get("User-Agent")
 		if r.URL.Path == "/test" {
 			w.WriteHeader(http.StatusOK)
 			if _, err := w.Write([]byte("TEST")); err != nil {
@@ -30,7 +31,8 @@ func proxiedBackendServer() *httptest.Server {
 
 func TestProxySiteHandler_OK(t *testing.T) {
 	t.Parallel()
-	backend := proxiedBackendServer()
+	userAgentSpy := ""
+	backend := proxiedBackendServer(&userAgentSpy)
 	defer backend.Close()
 
 	testPath := "/" + url.QueryEscape(backend.URL+"/test")
@@ -43,6 +45,10 @@ func TestProxySiteHandler_OK(t *testing.T) {
 	resp := recorder.Result()
 	defer resp.Body.Close()
 
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("Expected status code to be 200 OK, got %d", resp.StatusCode)
+	}
+
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		t.Fatalf("Failed to read response body: %v", err)
@@ -51,11 +57,16 @@ func TestProxySiteHandler_OK(t *testing.T) {
 	if string(body) != "TEST" {
 		t.Errorf("Expected response body to be 'TEST', got '%s'", string(body))
 	}
+
+	if userAgentSpy != googlebotUserAgent {
+		t.Errorf("Expected User-Agent to be '%s', got '%s'", googlebotUserAgent, userAgentSpy)
+	}
 }
 
 func TestProxySiteHandler_NoHttpScheme(t *testing.T) {
 	t.Parallel()
-	backend := proxiedBackendServer()
+	userAgentSpy := ""
+	backend := proxiedBackendServer(&userAgentSpy)
 	defer backend.Close()
 
 	testPath := "/" + url.QueryEscape(backend.URL[len("http://"):]+"/test")
@@ -97,7 +108,8 @@ func TestProxySiteHandler_InvalidEncoding(t *testing.T) {
 
 func TestProxySiteHandler_ProxiedError(t *testing.T) {
 	t.Parallel()
-	backend := proxiedBackendServer()
+	userAgentSpy := ""
+	backend := proxiedBackendServer(&userAgentSpy)
 	defer backend.Close()
 
 	testPath := "/" + url.QueryEscape(backend.URL+"/410")
