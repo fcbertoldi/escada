@@ -98,6 +98,10 @@ func (h *Handler) ProxyPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	req.Header.Set("User-Agent", googlebotUserAgent)
+	acceptLanguage, ok := r.Header["Accept-Language"]
+	if ok {
+		req.Header["Accept-Language"] = acceptLanguage
+	}
 	resp, err := client.Do(req)
 	if err != nil {
 		logger.Error("ProxyPage", slog.String("error", err.Error()))
