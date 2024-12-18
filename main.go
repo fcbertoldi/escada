@@ -46,7 +46,7 @@ func extractUrl(u string, urlScheme string) (reqUrl *url.URL, err error) {
 	return reqUrl, nil
 }
 
-func copyHeader(dst, src http.Header) {
+func copyResponseHeaders(dst, src http.Header) {
 	clear(dst)
 	for k, vv := range src {
 		for _, v := range vv {
@@ -97,11 +97,12 @@ func (h *Handler) ProxyPage(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "<h1>Internal Server Error</h1>")
 		return
 	}
-	req.Header.Set("User-Agent", googlebotUserAgent)
-	acceptLanguage, ok := r.Header["Accept-Language"]
-	if ok {
-		req.Header["Accept-Language"] = acceptLanguage
+
+	for header, values := range r.Header {
+		req.Header[header] = values
 	}
+	req.Header.Set("User-Agent", googlebotUserAgent)
+
 	resp, err := client.Do(req)
 	if err != nil {
 		logger.Error("ProxyPage", slog.String("error", err.Error()))
@@ -118,7 +119,7 @@ func (h *Handler) ProxyPage(w http.ResponseWriter, r *http.Request) {
 	}
 	defer resp.Body.Close()
 
-	copyHeader(w.Header(), resp.Header)
+	copyResponseHeaders(w.Header(), resp.Header)
 	w.WriteHeader(resp.StatusCode)
 	_, err = io.Copy(w, resp.Body)
 	if err != nil {
