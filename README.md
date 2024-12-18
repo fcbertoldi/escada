@@ -2,6 +2,10 @@
 
 A self-hosted alternative to [12ft.io](https://12ft.io).
 
+## How it Works
+
+`escada` works as a proxy server. It pretends to be GoogleBot web crawler by changing the `User-Agent` HTTP header of the request to GoogleBot's. It may not work with some paywalled sites that uses other forms of identifying non-bot requests, such as IP ranges.
+
 
 ## Usage
 
