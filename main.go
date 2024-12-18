@@ -132,7 +132,13 @@ func (h *Handler) ProxyPage(w http.ResponseWriter, r *http.Request) {
 func main() {
 	addrFlag := flag.String("addr", defaultAddr, "address to listen on")
 	portFlag := flag.Int("port", defaultPort, "port to listen on")
+	helpFlag := flag.Bool("help", false, "display help")
 	flag.Parse()
+
+	if *helpFlag {
+		flag.Usage()
+		os.Exit(0)
+	}
 
 	if *portFlag <= 0 {
 		logger.Error("Invalid port number", slog.Int("port", *portFlag))
