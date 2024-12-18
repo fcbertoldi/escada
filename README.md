@@ -25,7 +25,9 @@ javascript:(function(){window.location.href='http://<ADDR>:<PORT>/pages/'+encode
 
 Change `ADDR` and `PORT` to the address and port you set for `escada`.
 
-## SystemD Service
+## Create a Service
+
+### Linux/SystemD
 
 ```
 [Unit]
@@ -39,6 +41,15 @@ ExecStart=/usr/local/bin/escada -port=9982
 
 [Install]
 WantedBy=default.target
+```
+
+### Windows
+
+In an Admin cmd prompt:
+
+
+```
+sc.exe create Escada binpath= "PATH TO SERVICE"
 ```
 
 ## Similar Projects
