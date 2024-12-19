@@ -7,6 +7,35 @@ A self-hosted alternative to [12ft.io](https://12ft.io).
 `escada` works as a proxy server. It pretends to be GoogleBot web crawler by changing the `User-Agent` HTTP header of the request to GoogleBot's. It may not work with some paywalled sites that uses other forms of identifying non-bot requests, such as IP ranges.
 
 
+## Installation
+
+The following instruction will install the executable and create a http service available at http://localhost:9982
+
+### Linux
+
+1. The following shell command will build install the executable into `usr/local/bin`
+```sh
+make build && sudo make install
+```
+
+2. Configure the  [SystemD service](#linuxsystemd)
+```sh
+mv escada.service <systemd_unit_path>
+systemctl enable escada.service
+systemctl start escada.service
+```
+
+### Windows
+
+1. Open a Windows command prompt with admin priviledges and cd into the repo. The following will build and install the executable into %PROGRAMFILES%Escada, and
+
+```bat
+build.cmd
+install.cmd
+```
+
+2. [Create a service](#windows-service)
+
 ## Usage
 
 ```
@@ -47,7 +76,7 @@ ExecStart=/usr/local/bin/escada -port=9982
 WantedBy=default.target
 ```
 
-### Windows
+### Windows Service
 
 In an Admin cmd prompt:
 
