@@ -1,4 +1,4 @@
 @echo off
-md "%ProgramFiles%\Escada"
-set GOBIN="%ProgramFiles%\Escada"
-go install "%~dp0bin\escada"
+set destination_dir="%ProgramFiles%\Escada"
+md "%destination_dir%"
+copy /Y "%~dp0bin\escada.exe" "%destination_dir%"
