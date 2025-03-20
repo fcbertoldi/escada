@@ -7,7 +7,10 @@ build:
 install:
 	install bin/* $(PREFIX)/bin
 
+test:
+	go test
+
 clean:
 	[ -d bin ] && rm -rf bin/*
 
-.PHONY: build install clean
+.PHONY: build install test clean
