@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+    <title>Escada 🪜</title>
+    <style>
+        body {
+            /* Center the form on the page */
+            text-align: center;
+        }
+
+        form {
+            /* Form outline */
+            padding: 1em;
+        }
+
+        button,
+        input,
+        optgroup,
+        select,
+        textarea {
+            font-family: inherit;
+            /* 1 */
+            font-size: 100%;
+            /* 1 */
+            line-height: 1.15;
+            /* 1 */
+            margin: 0;
+            /* 2 */
+        }
+
+        #url:user-invalid {
+            background-color: #FFC0CB;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>ESCADA</h1>
+
+    <form id="proxyForm"
+          method="get">
+        <input type="url"
+               id="url"
+               name="url"
+               placeholder="https://example.com"
+               required>
+        <button type="submit">Go</button>
+    </form>
+
+    <script>
+        document.getElementById('proxyForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+            let url = document.getElementById('url').value;
+            if (url.indexOf('http') === -1) {
+                url = 'https://' + url;
+            }
+            window.location.href = '/pages/' + encodeURIComponent(url);
+            return false;
+        });
+    </script>
+</body>
+
+</html>

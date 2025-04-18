@@ -1,0 +1,38 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Create bin directory",
+			"type": "shell",
+			"linux": {
+				"command": "[ -d mkdir ] || mkdir -p ${workspaceFolder}/bin"
+			},
+			"windows": {
+				"command": "cmd",
+				"args": ["/C", "if not exist ${workspaceFolder}\\bin mkdir ${workspaceFolder}\\bin"]
+			}
+		},
+		{
+			"type": "go",
+			"label": "go: build project",
+			"command": "build",
+			"dependsOn": [
+				"Create bin directory"
+			],
+			"args": [
+				"${workspaceFolder}"
+			],
+			"options": {
+				"cwd": "${workspaceFolder}/bin"
+			},
+			"problemMatcher": [
+				"$go"
+			],
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
+			"detail": "cd /home/fernando/Dev/escada/bin; go build ${workspaceFolder}"
+		}
+	]
+}
